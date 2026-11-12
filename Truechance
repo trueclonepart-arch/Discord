@@ -1,0 +1,35 @@
+import discord
+from discord.ext import commands
+import discord.state
+
+if hasattr(discord.state.ConnectionState, 'parse_ready'):
+    _original = discord.state.ConnectionState.parse_ready
+    def _patched(self, data):
+        try:
+            for k in ('read_states', 'read_state', 'guild_settings', 'user_guild_settings', 'guild_experiments'):
+                if isinstance(data.get(k), list):
+                    data[k] = {'entries': data[k]}
+            return _original(self, data)
+        except Exception:
+            return None
+    discord.state.ConnectionState.parse_ready = _patched
+
+async def identify(self):
+    await self.send_as_json({
+        "op": self.IDENTIFY,
+        "d": {
+            "token": self.token,
+            "properties": {"os": "android", "browser": "Discord VR", "device": "Discord VR"},
+            "compress": True,
+            "large_threshold": 250,
+        }
+    })
+discord.gateway.DiscordWebSocket.identify = identify
+
+bot = commands.Bot(command_prefix="!", self_bot=True)
+
+@bot.event
+async def on_ready():
+    print(f"Logged in as: {bot.user} | Trạng thái: Discord VR")
+
+bot.run("MTQzOTYzODU2MDg5NzYzMDM1Mw.GkoHWA.QBbPrwhlAIwg3gKlMGdt-EztHdFmMB0JMeAxD0")
